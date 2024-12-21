@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "description": "A CLI tool to create Go project scaffolding",
+  "homepage": "https://github.com/raldeskrisnu/go-scaffolding-poc",
+  "license": "MIT",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/raldeskrisnu/go-scaffolding-poc/releases/download/v1.0.0/myscaffold.exe",
+      "hash": "0b5f94e331d306cf1cb80bc9d3530b706fe0d002d1df4b3c36f5674eebb2a1c3"
+    }
+  },
+  "bin": "myscaffold.exe",
+  "checkver": {
+    "github": "https://github.com/raldeskrisnu/go-scaffolding-poc"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/raldeskrisnu/go-scaffolding-poc/releases/download/v$version/myscaffold.exe"
+      }
+    }
+  }
+}

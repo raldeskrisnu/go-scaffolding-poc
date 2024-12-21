@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -58,55 +59,23 @@ EXPOSE 8080
 CMD ["./main"]
 `
 
-const readmeTemplate = `# {{.ProjectName}}
-
-This is the {{.ProjectName}} project.
-`
-
-const gitignoreTemplate = `# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-`
-
-const licenseTemplate = `MIT License
-
-Copyright (c) {{.Year}} {{.Author}}
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-`
-
-// Main function to create the project scaffolding
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: myscaffold <project-name>")
+
+	moduleName := flag.String("module", "", "The module name for go.mod (e.g., github.com/username/package)")
+	flag.Parse()
+
+	if len(flag.Args()) < 1 {
+		fmt.Println("Usage: myscaffold --module=github.com/username/package <project-name>")
 		return
 	}
 
-	projectName := os.Args[1]
+	projectName := flag.Args()[0]
 	projectPath := filepath.Join(".", projectName)
-	moduleName := fmt.Sprintf("github.com/yourusername/%s", projectName)
+
+	if *moduleName == "" {
+		fmt.Println("Error: --module flag is required")
+		return
+	}
 
 	// Create directories
 	dirs := []string{
@@ -125,7 +94,6 @@ func main() {
 			fmt.Println("Error creating directory:", path, err)
 			return
 		}
-		fmt.Println("Successfully created directory:", path)
 	}
 
 	// Create files
@@ -134,21 +102,12 @@ func main() {
 		"cmd/app/main.go":     mainGoTemplate,
 		"configs/config.yaml": configYAMLTemplate,
 		"Dockerfile":          dockerfileTemplate,
-		"Makefile":            makefileTemplate,
-		"README.md":           readmeTemplate,
-		".gitignore":          gitignoreTemplate,
-		"LICENSE":             licenseTemplate,
 	}
-	// Create the files from the templates
+
 	for path, content := range files {
-		createFile(filepath.Join(projectPath, path), content, map[string]string{
-			"ModuleName":  moduleName,
-			"ProjectName": projectName,
-			"Year":        "2023",
-			"Author":      "Raldes Krisnu",
-		})
+		createFile(filepath.Join(projectPath, path), content, map[string]string{"ModuleName": *moduleName})
 	}
-	// Create println file
+
 	fmt.Println("Project scaffold created successfully at", projectPath)
 
 	// Initialize the Go module
@@ -176,11 +135,20 @@ func createFile(path string, templateContent string, data map[string]string) {
 		fmt.Println("Error creating file:", err)
 		return
 	}
-	defer file.Close()
+
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Println("Error closing file:", err)
+		}
+	}()
 
 	if data != nil {
-		tmpl.Execute(file, data)
+		err = tmpl.Execute(file, data)
 	} else {
-		file.WriteString(templateContent)
+		_, err = file.WriteString(templateContent)
+	}
+
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
 	}
 }
